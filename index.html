@@ -205,33 +205,6 @@
       grid-template-columns: 140px repeat(3, minmax(0, 1fr));
     }
 
-    .self-review {
-      display: grid;
-      gap: 14px;
-      margin: 18px 0;
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--card);
-      box-shadow: var(--shadow);
-    }
-
-    .self-review h2 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .self-fields {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .self-fields .field:first-child,
-    .self-fields .field.full {
-      grid-column: 1 / -1;
-    }
-
     [hidden] {
       display: none !important;
     }
@@ -341,10 +314,6 @@
         grid-template-columns: 1fr;
       }
 
-      .self-fields {
-        grid-template-columns: 1fr;
-      }
-
       button {
         width: 100%;
       }
@@ -358,34 +327,12 @@
       <section class="notice">
         <strong>填写规则</strong>
         <ol>
-          <li>Q2已经结束了，也请我们总结自己，调整好心态再出发 ^_^；</li>
+          <li>根据大家目标完成情况、成果贡献、协作性等提出，个人能力高低不作为投票的依据；</li>
           <li>请选择您确实了解工作输出的强相关方（至少5位）进行评分，当然不进行评分也请不吝“点赞和建议”；</li>
           <li>填写完毕后请复制结果手动在飞书上发送给江佳泽；</li>
         </ol>
       </section>
     </header>
-
-    <section class="self-review" aria-label="填写人季度回顾">
-      <h2>填写人和季度回顾</h2>
-      <div class="self-fields">
-        <div class="field">
-          <label for="reviewerName">姓名</label>
-          <input id="reviewerName" type="text" placeholder="请填写你的姓名" required>
-        </div>
-        <div class="field full">
-          <label for="workOutcome">工作成效（5~6月）</label>
-          <textarea id="workOutcome" placeholder="请填写主要工作成效" required></textarea>
-        </div>
-        <div class="field">
-          <label for="workIssue">不足或失误（5~6月）</label>
-          <textarea id="workIssue" placeholder="请填写不足、失误或复盘" required></textarea>
-        </div>
-        <div class="field">
-          <label for="julyGoal">7月的工作目标</label>
-          <textarea id="julyGoal" placeholder="请填写7月工作目标" required></textarea>
-        </div>
-      </div>
-    </section>
 
     <section class="toolbar" aria-label="操作栏">
       <div class="status">
@@ -411,9 +358,9 @@
 
   <script>
     const people = [
-      "邓述职", "龚子钰", "谷张吉", "江佳泽", "林鑫涛", "林志生", "刘锦水", "刘力源", "刘胜",
-      "徐慧", "潘继伟", "米悦", "倪海南", "王加文", "吴圣鸿", "伍世杰", "徐鹏飞", "杨开红",
-      "杨起源", "郑立平", "周世红", "朱世建", "张皓钧", "覃柯童", "祁向前", "陈清", "邹家龙", "黄林"
+      "邓述职", "谷张吉", "江佳泽", "林鑫涛", "林志生", "刘锦水", "刘力源", "刘胜",
+      "徐慧", "潘继伟", "倪海南", "王加文", "吴圣鸿", "伍世杰", "徐鹏飞", "杨开红",
+      "郑立平", "周世红", "张皓钧", "覃柯童", "祁向前", "陈清", "邹家龙", "黄林"
     ];
 
     const reviewList = document.querySelector("#reviewList");
@@ -425,11 +372,7 @@
     const topMessage = document.querySelector("#topMessage");
     const copyBtn = document.querySelector("#copyBtn");
     const clearBtn = document.querySelector("#clearBtn");
-    const reviewerName = document.querySelector("#reviewerName");
-    const workOutcome = document.querySelector("#workOutcome");
-    const workIssue = document.querySelector("#workIssue");
-    const julyGoal = document.querySelector("#julyGoal");
-    const storageKey = "peer-review-360-draft-v3";
+    const storageKey = "peer-review-360-draft-v4";
 
     totalCount.textContent = people.length;
 
@@ -449,27 +392,8 @@
       }
     }
 
-    function collectSelfReview() {
-      return {
-        name: reviewerName.value.trim(),
-        outcome: workOutcome.value.trim(),
-        issue: workIssue.value.trim(),
-        julyGoal: julyGoal.value.trim()
-      };
-    }
-
-    function restoreSelfReview() {
-      const self = getDraft().__self || {};
-      reviewerName.value = self.name || "";
-      workOutcome.value = self.outcome || "";
-      workIssue.value = self.issue || "";
-      julyGoal.value = self.julyGoal || "";
-    }
-
     function saveDraft() {
-      const draft = {
-        __self: collectSelfReview()
-      };
+      const draft = {};
       people.forEach((name, index) => {
         const id = `person-${index}`;
         const checked = document.querySelector(`input[name="${id}-rated"]:checked`);
@@ -546,18 +470,11 @@
       });
     }
 
-    function buildText(self, data) {
+    function buildText(data) {
       const selected = data.filter((item) => item.rated);
-      const selfLines = [
-        "填写人和季度回顾",
-        `姓名：${self.name}`,
-        `工作成效（5~6月）：${self.outcome}`,
-        `不足或失误（5~6月）：${self.issue}`,
-        `7月的工作目标：${self.julyGoal}`
-      ];
 
       if (selected.length === 0) {
-        return `${selfLines.join("\n")}\n\n请选择评分或不评分后，这里会生成360点评内容。`;
+        return "请选择评分或不评分后，这里会生成360点评内容。";
       }
 
       const reviewText = selected.map((item) => {
@@ -576,23 +493,10 @@
         return lines.join("\n");
       }).join("\n\n");
 
-      return `${selfLines.join("\n")}\n\n360点评内容\n\n${reviewText}`;
+      return `360点评内容\n\n${reviewText}`;
     }
 
-    function validate(self, data) {
-      if (self.name === "") {
-        return "请先填写你的姓名。";
-      }
-      if (self.outcome === "") {
-        return "请填写工作成效（5~6月）。";
-      }
-      if (self.issue === "") {
-        return "请填写不足或失误（5~6月）。";
-      }
-      if (self.julyGoal === "") {
-        return "请填写7月的工作目标。";
-      }
-
+    function validate(data) {
       const unselected = data.find((item) => item.rated === "");
       if (unselected) {
         return `${unselected.number}. ${unselected.name} 请选择评分或不评分。`;
@@ -633,21 +537,19 @@
     }
 
     function updatePreview() {
-      const self = collectSelfReview();
       const data = collectData();
       const count = data.filter((item) => item.rated === "评分").length;
       const selected = data.filter((item) => item.rated).length;
       ratedCount.textContent = `已评分 ${count} / 至少 5`;
       selectedCount.textContent = `已选择 ${selected} 人`;
-      output.textContent = buildText(self, data);
+      output.textContent = buildText(data);
       saveDraft();
       return data;
     }
 
     async function copyResult() {
-      const self = collectSelfReview();
       const data = updatePreview();
-      const error = validate(self, data);
+      const error = validate(data);
       if (error) {
         showMessage(error, "error");
         return;
@@ -664,10 +566,6 @@
     function clearAll() {
       if (!confirm("确认清空当前页面里已填写的内容吗？")) return;
       localStorage.removeItem(storageKey);
-      reviewerName.value = "";
-      workOutcome.value = "";
-      workIssue.value = "";
-      julyGoal.value = "";
       renderCards();
       bindEvents();
       showMessage("已清空。");
@@ -675,12 +573,6 @@
     }
 
     function bindEvents() {
-      [reviewerName, workOutcome, workIssue, julyGoal].forEach((element) => {
-        if (element.dataset.bound === "true") return;
-        element.addEventListener("input", updatePreview);
-        element.dataset.bound = "true";
-      });
-
       reviewList.querySelectorAll("input, textarea").forEach((element) => {
         element.addEventListener("input", updatePreview);
         element.addEventListener("change", (event) => {
@@ -710,7 +602,6 @@
       });
     }
 
-    restoreSelfReview();
     renderCards();
     bindEvents();
     updatePreview();
