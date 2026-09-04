@@ -508,6 +508,16 @@
         return `请至少选择 5 位强相关方进行评分，目前已评分 ${rated.length} 位。`;
       }
 
+      const distinctScores = new Set();
+      for (const item of rated) {
+        if (item.score !== "" && Number.isInteger(Number(item.score))) {
+          distinctScores.add(Number(item.score));
+        }
+      }
+      if (distinctScores.size < 4) {
+        return `提交的分数中至少需要包含 4 个不同的分数（当前不同分数 ${distinctScores.size} 个），请拉开区分度，避免分数扎堆。`;
+      }
+
       for (const item of rated) {
         if (item.score === "") {
           return `${item.number}. ${item.name} 已选择评分，请填写分数。`;
