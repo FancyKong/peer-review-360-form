@@ -329,6 +329,7 @@
         <ol>
           <li>根据大家目标完成情况、成果贡献、协作性等提出，个人能力高低不作为投票的依据；</li>
           <li>请选择您确实了解工作输出的强相关方（至少5位）进行评分，当然不进行评分也请不吝“点赞和建议”；</li>
+          <li>提交的分数中至少包含 4 个不同的分数，避免分数扎堆，请真实拉开区分度；</li>
           <li>填写完毕后请复制结果手动在飞书上发送给江佳泽；</li>
         </ol>
       </section>
@@ -337,6 +338,7 @@
     <section class="toolbar" aria-label="操作栏">
       <div class="status">
         <span class="pill" id="ratedCount">已评分 0 / 至少 5</span>
+        <span class="pill" id="distinctCount">不同分数 0 / 至少 4</span>
         <span class="pill" id="selectedCount">已选择 0 人</span>
         <span>名单共 <span id="totalCount">0</span> 人</span>
         <span class="top-message" id="topMessage" aria-live="polite"></span>
@@ -361,12 +363,14 @@
       "邓述职", "谷张吉", "江佳泽", "林鑫涛", "林志生", "刘锦水", "刘力源",
       "倪海南", "吴圣鸿", "伍世杰", "徐鹏飞", "杨开红", "张皓钧",
       "覃柯童", "祁向前", "陈清", "陈乃嗣", "邹家龙",
-      "刘胜", "徐慧", "潘继伟", "郑立平", "周世红", "黄林", "常铖铖"
+      "刘胜", "徐慧", "潘继伟", "郑立平", "周世红", "黄林", "常铖铖",
+      "王超", "周俊杰"
     ];
 
     const reviewList = document.querySelector("#reviewList");
     const output = document.querySelector("#output");
     const ratedCount = document.querySelector("#ratedCount");
+    const distinctCount = document.querySelector("#distinctCount");
     const selectedCount = document.querySelector("#selectedCount");
     const totalCount = document.querySelector("#totalCount");
     const message = document.querySelector("#message");
@@ -415,7 +419,7 @@
         const id = `person-${index}`;
         const item = draft[name] || {};
         const isRated = item.rated === "评分";
-        const isNotRated = item.rated === "不评分";
+        const isNotRated = !isRated;
         const isSelected = isRated || isNotRated;
         return `
           <article class="review-card">
@@ -552,6 +556,12 @@
       const count = data.filter((item) => item.rated === "评分").length;
       const selected = data.filter((item) => item.rated).length;
       ratedCount.textContent = `已评分 ${count} / 至少 5`;
+      const distinctNums = new Set(
+        data
+          .filter((item) => item.rated === "评分" && item.score !== "" && Number.isInteger(Number(item.score)))
+          .map((item) => Number(item.score))
+      );
+      distinctCount.textContent = `不同分数 ${distinctNums.size} / 至少 4`;
       selectedCount.textContent = `已选择 ${selected} 人`;
       output.textContent = buildText(data);
       saveDraft();
