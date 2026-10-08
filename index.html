@@ -206,6 +206,78 @@
       cursor: pointer;
     }
 
+    .nominee-card {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .nominee-card .card-head .person {
+      font-size: 17px;
+    }
+
+    .nominee-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    label.nominee {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      min-height: 36px;
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    label.nominee.checked {
+      border-color: var(--primary);
+      background: var(--soft);
+      color: #1e40af;
+      font-weight: 700;
+    }
+
+    label.nominee input {
+      margin: 0;
+      accent-color: var(--primary);
+    }
+
+    .remove-nominee {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .remove-nominee:hover {
+      background: #fee4e2;
+      color: var(--danger);
+    }
+
+    .nominee-add {
+      display: flex;
+      gap: 10px;
+    }
+
+    .nominee-add input {
+      flex: 1;
+    }
+
     .fields {
       display: grid;
       gap: 12px;
@@ -347,11 +419,24 @@
         <span class="pill" id="ratedCount">已评分 0 / 至少 5</span>
         <span class="pill" id="distinctCount">不同分数 0 / 至少 4</span>
         <span class="pill" id="selectedCount">已选择 0 人</span>
+        <span class="pill" id="nomineeCount">自荐评价人 0 / 5</span>
         <span>名单共 <span id="totalCount">0</span> 人</span>
         <span class="top-message" id="topMessage" aria-live="polite"></span>
       </div>
       <button class="secondary" type="button" id="clearBtn">清空内容</button>
       <button type="button" id="copyBtn">生成并复制（飞书发送给江佳泽）</button>
+    </section>
+
+    <section class="nominee-card" id="nomineeSection" aria-label="自荐评价人">
+      <div class="card-head">
+        <div class="person">请填写 5 位您觉得最有机会评价您工作的相关方（必选，可多选）</div>
+        <span class="pill">从名单中选择，也可以添加名单外的其他名字</span>
+      </div>
+      <div class="nominee-list" id="nomineeList"></div>
+      <div class="nominee-add">
+        <input type="text" id="nomineeInput" placeholder="输入名单外的其他名字，回车或点击“添加”" maxlength="20">
+        <button class="secondary" type="button" id="nomineeAddBtn">添加</button>
+      </div>
     </section>
 
     <section class="review-list" id="reviewList"></section>
@@ -367,9 +452,9 @@
 
   <script>
     const people = [
-      "邓述职", "谷张吉", "江佳泽", "林鑫涛", "林志生", "刘锦水", "刘力源",
-      "倪海南", "吴圣鸿", "伍世杰", "徐鹏飞", "杨开红", "张皓钧",
-      "覃柯童", "祁向前", "陈清", "陈乃嗣", "邹家龙",
+      "江佳泽", "林鑫涛", "林志生", "刘锦水", "刘力源",
+      "吴圣鸿", "伍世杰", "徐鹏飞", "杨开红", "张皓钧",
+      "覃柯童", "祁向前", "陈清", "邹家龙",
       "刘胜", "徐慧", "潘继伟", "郑立平", "周世红", "黄林", "常铖铖",
       "王超", "周俊杰"
     ];
@@ -385,6 +470,12 @@
     const copyBtn = document.querySelector("#copyBtn");
     const clearBtn = document.querySelector("#clearBtn");
     const storageKey = "peer-review-360-draft-v4";
+    const nomineeStorageKey = "peer-review-360-nominees-v1";
+    const NOMINEE_TOTAL = 5;
+    const nomineeList = document.querySelector("#nomineeList");
+    const nomineeInput = document.querySelector("#nomineeInput");
+    const nomineeAddBtn = document.querySelector("#nomineeAddBtn");
+    const nomineeCount = document.querySelector("#nomineeCount");
 
     totalCount.textContent = people.length;
 
@@ -402,6 +493,48 @@
       } catch {
         return {};
       }
+    }
+
+    function getNomineeDraft() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(nomineeStorageKey) || "{}");
+        return {
+          selected: Array.isArray(parsed.selected) ? parsed.selected : [],
+          custom: Array.isArray(parsed.custom) ? parsed.custom : []
+        };
+      } catch {
+        return { selected: [], custom: [] };
+      }
+    }
+
+    function setNomineeDraft(state) {
+      localStorage.setItem(nomineeStorageKey, JSON.stringify(state));
+    }
+
+    function nomineeNames() {
+      const state = getNomineeDraft();
+      return [...people, ...state.custom.filter((name) => !people.includes(name))];
+    }
+
+    function renderNominees() {
+      const state = getNomineeDraft();
+      nomineeList.innerHTML = nomineeNames().map((name) => {
+        const isCustom = !people.includes(name);
+        const checked = state.selected.includes(name);
+        return `
+          <label class="nominee ${checked ? "checked" : ""}">
+            <input type="checkbox" data-nominee="${escapeHtml(name)}" ${checked ? "checked" : ""}>
+            ${escapeHtml(name)}
+            ${isCustom ? `<span class="remove-nominee" data-remove="${escapeHtml(name)}" role="button" title="移除">×</span>` : ""}
+          </label>
+        `;
+      }).join("");
+    }
+
+    function updateNomineeUI() {
+      const count = getNomineeDraft().selected.length;
+      nomineeCount.textContent = `自荐评价人 ${count} / ${NOMINEE_TOTAL}`;
+      nomineeCount.style.color = count === NOMINEE_TOTAL ? "var(--ok)" : "";
     }
 
     function saveDraft() {
@@ -484,8 +617,12 @@
 
     function buildText(data) {
       const selected = data.filter((item) => item.rated);
+      const nominees = getNomineeDraft().selected;
+      const nomineeLine = nominees.length
+        ? `我认为最有机会评价我工作的5位相关方：${nominees.join("、")}`
+        : "";
 
-      if (selected.length === 0) {
+      if (selected.length === 0 && !nomineeLine) {
         return "请选择评分或不评分后，这里会生成360点评内容。";
       }
 
@@ -505,10 +642,18 @@
         return lines.join("\n");
       }).join("\n\n");
 
-      return `360点评内容\n\n${reviewText}`;
+      const parts = [];
+      if (nomineeLine) parts.push(nomineeLine);
+      if (reviewText) parts.push(reviewText);
+      return `360点评内容\n\n${parts.join("\n\n")}`;
     }
 
     function validate(data) {
+      const nominees = getNomineeDraft().selected;
+      if (nominees.length !== NOMINEE_TOTAL) {
+        return `请填写 ${NOMINEE_TOTAL} 位您觉得最有机会评价您工作的相关方（必选多选），目前已选 ${nominees.length} 位。`;
+      }
+
       const unselected = data.find((item) => item.rated === "");
       if (unselected) {
         return `${unselected.number}. ${unselected.name} 请选择评分或不评分。`;
@@ -594,8 +739,11 @@
     function clearAll() {
       if (!confirm("确认清空当前页面里已填写的内容吗？")) return;
       localStorage.removeItem(storageKey);
+      localStorage.removeItem(nomineeStorageKey);
       renderCards();
       bindEvents();
+      renderNominees();
+      updateNomineeUI();
       showMessage("已清空。");
       updatePreview();
     }
@@ -630,7 +778,67 @@
       });
     }
 
+    nomineeList.addEventListener("change", (event) => {
+      if (!event.target.matches("input[data-nominee]")) return;
+      const name = event.target.dataset.nominee;
+      const state = getNomineeDraft();
+      if (event.target.checked) {
+        if (!state.selected.includes(name)) state.selected.push(name);
+      } else {
+        state.selected = state.selected.filter((item) => item !== name);
+      }
+      setNomineeDraft(state);
+      event.target.closest("label").classList.toggle("checked", event.target.checked);
+      updateNomineeUI();
+      updatePreview();
+    });
+
+    nomineeList.addEventListener("click", (event) => {
+      const remove = event.target.closest("[data-remove]");
+      if (!remove) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const name = remove.dataset.remove;
+      const state = getNomineeDraft();
+      state.custom = state.custom.filter((item) => item !== name);
+      state.selected = state.selected.filter((item) => item !== name);
+      setNomineeDraft(state);
+      renderNominees();
+      updateNomineeUI();
+      updatePreview();
+    });
+
+    function addCustomNominee() {
+      const name = nomineeInput.value.trim();
+      if (!name) {
+        showMessage("请输入要添加的其他相关方名字。", "error");
+        return;
+      }
+      if (nomineeNames().includes(name)) {
+        showMessage(`${name} 已在名单中，直接勾选即可。`, "error");
+        return;
+      }
+      const state = getNomineeDraft();
+      state.custom.push(name);
+      state.selected.push(name);
+      setNomineeDraft(state);
+      nomineeInput.value = "";
+      renderNominees();
+      updateNomineeUI();
+      updatePreview();
+    }
+
+    nomineeAddBtn.addEventListener("click", addCustomNominee);
+    nomineeInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addCustomNominee();
+      }
+    });
+
     renderCards();
+    renderNominees();
+    updateNomineeUI();
     bindEvents();
     updatePreview();
     copyBtn.addEventListener("click", copyResult);
