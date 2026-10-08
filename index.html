@@ -206,16 +206,6 @@
       cursor: pointer;
     }
 
-    .nominee-card {
-      display: grid;
-      gap: 14px;
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--card);
-      box-shadow: var(--shadow);
-    }
-
     .nominee-card .card-head .person {
       font-size: 17px;
     }
@@ -282,6 +272,52 @@
       display: grid;
       gap: 12px;
       grid-template-columns: 140px repeat(3, minmax(0, 1fr));
+    }
+
+    .questions {
+      display: grid;
+      gap: 18px;
+    }
+
+    .section-head,
+    .hint {
+      display: grid;
+      gap: 6px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .section-head p,
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.7;
+    }
+
+    .nominee-card,
+    .feedback-card {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .nominee-card .card-head,
+    .feedback-card .card-head {
+      align-items: flex-start;
+    }
+
+    #finalFeedback {
+      min-height: 110px;
     }
 
     [hidden] {
@@ -427,19 +463,35 @@
       <button type="button" id="copyBtn">生成并复制（飞书发送给江佳泽）</button>
     </section>
 
-    <section class="nominee-card" id="nomineeSection" aria-label="自荐评价人">
-      <div class="card-head">
-        <div class="person">请填写 5 位您觉得最有机会评价您工作的相关方（必选，可多选）</div>
-        <span class="pill">从名单中选择，也可以添加名单外的其他名字</span>
-      </div>
-      <div class="nominee-list" id="nomineeList"></div>
-      <div class="nominee-add">
-        <input type="text" id="nomineeInput" placeholder="输入名单外的其他名字，回车或点击“添加”" maxlength="20">
-        <button class="secondary" type="button" id="nomineeAddBtn">添加</button>
-      </div>
-    </section>
+    <section class="questions">
+      <section class="nominee-card" id="nomineeSection" aria-label="自荐评价人">
+        <div class="section-head">
+          <h2>一、请填写 5 位您觉得最有机会评价您工作的相关方（必选，可多选）</h2>
+          <p>从下方名单中选择，也可以输入名单外的其他名字后点击“添加”。</p>
+        </div>
+        <div class="nominee-list" id="nomineeList"></div>
+        <div class="nominee-add">
+          <input type="text" id="nomineeInput" placeholder="输入名单外的其他名字，回车或点击“添加”" maxlength="20">
+          <button class="secondary" type="button" id="nomineeAddBtn">添加</button>
+        </div>
+      </section>
 
-    <section class="review-list" id="reviewList"></section>
+      <section aria-label="相关方评分与点评">
+        <div class="section-head">
+          <h2>二、对以下相关方进行评分与点评</h2>
+          <p>请选择您确实了解工作输出的强相关方（至少 5 位）评分；不评分的人选，也欢迎填写“点赞和建议”。</p>
+        </div>
+        <div class="review-list" id="reviewList"></div>
+      </section>
+
+      <section class="feedback-card" aria-label="其他建议">
+        <div class="section-head">
+          <h2>三、还有什么想说的</h2>
+          <p>对整个组织的提升有帮助的建议。</p>
+        </div>
+        <textarea id="finalFeedback" placeholder="选填：任何对整个组织提升有帮助的想法或建议"></textarea>
+      </section>
+    </section>
 
     <section class="output-wrap">
       <div class="output-head">
@@ -471,11 +523,13 @@
     const clearBtn = document.querySelector("#clearBtn");
     const storageKey = "peer-review-360-draft-v4";
     const nomineeStorageKey = "peer-review-360-nominees-v1";
+    const feedbackStorageKey = "peer-review-360-final-feedback-v1";
     const NOMINEE_TOTAL = 5;
     const nomineeList = document.querySelector("#nomineeList");
     const nomineeInput = document.querySelector("#nomineeInput");
     const nomineeAddBtn = document.querySelector("#nomineeAddBtn");
     const nomineeCount = document.querySelector("#nomineeCount");
+    const finalFeedbackInput = document.querySelector("#finalFeedback");
 
     totalCount.textContent = people.length;
 
@@ -534,7 +588,17 @@
     function updateNomineeUI() {
       const count = getNomineeDraft().selected.length;
       nomineeCount.textContent = `自荐评价人 ${count} / ${NOMINEE_TOTAL}`;
-      nomineeCount.style.color = count === NOMINEE_TOTAL ? "var(--ok)" : "";
+      nomineeCount.style.color = count === NOMINEE_TOTAL
+        ? "var(--ok)"
+        : (count > NOMINEE_TOTAL ? "var(--danger)" : "");
+    }
+
+    function getFinalFeedback() {
+      return localStorage.getItem(feedbackStorageKey) || "";
+    }
+
+    function setFinalFeedback(value) {
+      localStorage.setItem(feedbackStorageKey, value);
     }
 
     function saveDraft() {
@@ -618,11 +682,12 @@
     function buildText(data) {
       const selected = data.filter((item) => item.rated);
       const nominees = getNomineeDraft().selected;
+      const finalFeedback = getFinalFeedback().trim();
       const nomineeLine = nominees.length
         ? `我认为最有机会评价我工作的5位相关方：${nominees.join("、")}`
         : "";
 
-      if (selected.length === 0 && !nomineeLine) {
+      if (selected.length === 0 && !nomineeLine && !finalFeedback) {
         return "请选择评分或不评分后，这里会生成360点评内容。";
       }
 
@@ -645,6 +710,7 @@
       const parts = [];
       if (nomineeLine) parts.push(nomineeLine);
       if (reviewText) parts.push(reviewText);
+      if (finalFeedback) parts.push(`还有什么想说的（对整个组织的提升有帮助的建议）：\n${finalFeedback}`);
       return `360点评内容\n\n${parts.join("\n\n")}`;
     }
 
@@ -740,6 +806,8 @@
       if (!confirm("确认清空当前页面里已填写的内容吗？")) return;
       localStorage.removeItem(storageKey);
       localStorage.removeItem(nomineeStorageKey);
+      localStorage.removeItem(feedbackStorageKey);
+      finalFeedbackInput.value = "";
       renderCards();
       bindEvents();
       renderNominees();
@@ -840,6 +908,11 @@
     renderNominees();
     updateNomineeUI();
     bindEvents();
+    finalFeedbackInput.value = getFinalFeedback();
+    finalFeedbackInput.addEventListener("input", (event) => {
+      setFinalFeedback(event.target.value);
+      updatePreview();
+    });
     updatePreview();
     copyBtn.addEventListener("click", copyResult);
     clearBtn.addEventListener("click", clearAll);
